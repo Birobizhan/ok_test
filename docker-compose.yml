@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: stats_db_container
+    restart: always
+
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: stats_db
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+
+  api:
+    build: .
+    container_name: audience_api_container
+    restart: always
+
+    # API доступен по адресу http://localhost:80
+    ports:
+      - "80:80"
+
+    # Установка переменных окружения для API
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/stats_db
+
+    # API ждет только запуска контейнера db
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+
