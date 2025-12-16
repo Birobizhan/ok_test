@@ -14,6 +14,12 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d stats_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
 
   api:
     build: .
@@ -26,12 +32,24 @@ services:
 
     # Установка переменных окружения для API
     environment:
-      DATABASE_URL: postgresql://user:password@db:5432/stats_db
+      DATABASE_URL: postgresql+asyncpg://user:password@db:5432/stats_db
 
-    # API ждет только запуска контейнера db
+    # API ждет готовности БД (healthcheck)
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
+  init-db:
+    build: .
+    container_name: init_db_container
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://user:password@db:5432/stats_db
+      PYTHONPATH: /app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python -m app.init_db
 
 volumes:
   postgres_data:
-

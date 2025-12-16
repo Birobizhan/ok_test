@@ -1,10 +1,8 @@
 import logging
 from fastapi import HTTPException, Query, Depends, FastAPI
 from sqlalchemy import text
-from sqlalchemy.orm import Session
-
+from sqlalchemy.ext.asyncio import AsyncSession
 from .database import get_db
-from .data_loader import init_db_data
 from .validate_sql import validate_sql_condition
 
 logger = logging.getLogger(__name__)
@@ -13,19 +11,11 @@ logger.setLevel(logging.INFO)
 app = FastAPI()
 
 
-@app.on_event("startup")
-def on_startup() -> None:
-    """Инициализация и заполнение данными бд при запуске"""
-    logger.info("Запуск обработчика startup")
-    init_db_data()
-    logger.info("Инициализация завершена")
-
-
 @app.get("/getPercent")
-def get_percent(
+async def get_percent(
         audience1: str = Query(..., description="SQL условие для первой аудитории"),
         audience2: str = Query(..., description="SQL условие для второй аудитории"),
-        db: Session = Depends(get_db)
+        db: AsyncSession = Depends(get_db)
 ) -> dict[str, float]:
     """Эндпоинт для получения процента вхождения второй аудитории в первую, валидирует оба запроса к аудиториям и потом
     посылает запрос в БД для получения людей входящих в аудитории и затем расчет процента вхождения"""
@@ -61,13 +51,14 @@ def get_percent(
     """)
 
     try:
-        result = db.execute(sql_query).fetchone()
+        result = await db.execute(sql_query)
+        row = result.fetchone()
 
-        if result is None:
+        if row is None:
             total_weight: float = 0.0
             intersection_weight: float = 0.0
         else:
-            total_weight, intersection_weight = result
+            total_weight, intersection_weight = row
 
         total_weight = float(total_weight)
         intersection_weight = float(intersection_weight)

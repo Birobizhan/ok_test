@@ -24,7 +24,7 @@ curl "http://localhost/getPercent?audience1=Sex%20%3D%201%20AND%20Age%20%3E%3D%2
 Формат ответа:
 ```
 {
-  "percent": 0.8333333333333334
+"percent":0.43954413320834435
 }
 ```
 
